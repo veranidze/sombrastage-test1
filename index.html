@@ -162,25 +162,34 @@
                 onStart: () => { isSavingOrder = true; },
                 onEnd: async () => {
                     const rows = Array.from(el.children);
-                    // Формируем массив объектов для обновления только полей id и order
-                    const updates = rows.map((child, index) => ({
-                        id: child.dataset.id,
-                        order: index + 1
-                    }));
+                    
+                    // Ключевое исправление: передаем ВСЕ обязательные поля (title), 
+                    // чтобы база не ругалась на пустые значения при upsert
+                    const updates = rows.map((child, index) => {
+                        const songId = child.dataset.id;
+                        const originalSong = songs.find(s => s.id === songId);
+                        return {
+                            id: songId,
+                            order: index + 1,
+                            title: originalSong ? originalSong.title : "Untitled", // Передаем title, чтобы избежать ошибки 23502
+                            lyrics: originalSong ? originalSong.lyrics : ""
+                        };
+                    });
 
                     toggleLoader(true);
                     try {
-                        // Чистый upsert без лишних параметров columns в URL
                         const { error } = await supabaseClient
                             .from('songs')
-                            .upsert(updates);
+                            .upsert(updates, { onConflict: 'id' });
                         
                         if (error) throw error;
                         showToast("Порядок сохранен");
+                        
+                        // Обновляем локальный массив песен, чтобы данные были актуальны
+                        songs = updates.map(u => ({...songs.find(s => s.id === u.id), ...u}));
                     } catch (err) {
                         console.error("Sort Error Details:", err);
                         showToast("Ошибка синхронизации");
-                        // В случае ошибки возвращаем как было в БД
                         refreshData();
                     } finally {
                         toggleLoader(false);
