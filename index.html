@@ -38,14 +38,14 @@
         }
 
         .song-row {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             border-bottom: 1px solid var(--glass-border);
         }
 
         .song-row.played { background: var(--played-bg); }
 
         .song-row.active {
-            border-left: 4px solid var(--accent-color);
+            border-left: 3px solid var(--accent-color);
             background: rgba(16, 185, 129, 0.05);
         }
 
@@ -53,9 +53,10 @@
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s ease-out;
+            background: rgba(0,0,0,0.3);
         }
 
-        .lyrics-panel.show { max-height: 1000px; }
+        .lyrics-panel.show { max-height: 2000px; }
 
         .sortable-ghost { opacity: 0.1; background: var(--accent-color) !important; }
 
@@ -67,6 +68,74 @@
         }
         .animate-loader { animation: loader-anim 1.5s infinite linear; }
     </style>
+</head>
+
+<body class="antialiased">
+    <div id="global-loader" class="fixed top-0 left-0 w-full h-[2px] z-50 overflow-hidden bg-white/5 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="w-full h-full bg-emerald-500 origin-left animate-loader"></div>
+    </div>
+
+    <header class="glass relative z-40 px-4 py-3 mb-2">
+        <div class="max-w-xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-emerald-600/20 p-1.5 rounded-lg text-emerald-500 border border-emerald-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                </div>
+                <h1 class="font-black text-lg tracking-tighter uppercase italic text-white">BandFlow</h1>
+            </div>
+            <button onclick="resetPlayed()" class="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors active:scale-95">Reset</button>
+        </div>
+    </header>
+
+    <main class="max-w-xl mx-auto pb-32 px-2">
+        <div id="song-list" class="flex flex-col rounded-xl overflow-hidden glass shadow-xl"></div>
+    </main>
+
+    <div class="fixed bottom-6 right-6 z-40">
+        <button onclick="openEditModal()" class="w-12 h-12 bg-emerald-600 text-white rounded-xl shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="status-toast" class="fixed bottom-20 left-0 right-0 z-50 px-6 transition-all duration-400 translate-y-24 opacity-0 pointer-events-none">
+        <div class="max-w-xs mx-auto glass border-emerald-500/50 p-3 rounded-xl flex items-center gap-2 shadow-2xl">
+            <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span id="toast-text" class="font-bold text-[9px] uppercase tracking-widest text-emerald-50"></span>
+        </div>
+    </div>
+
+    <!-- Song Edit Modal -->
+    <div id="song-modal" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] hidden items-end sm:items-center justify-center p-4">
+        <div class="bg-[#12141c] w-full max-w-lg rounded-[24px] border border-white/10 shadow-2xl p-6 max-h-[90vh] overflow-y-auto outline-none">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modal-title" class="text-lg font-black italic uppercase tracking-wider text-emerald-500">Edit Song</h2>
+                <button id="delete-btn" onclick="deleteCurrentSong()" class="p-2 text-red-500/40 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                </button>
+            </div>
+            <form id="song-form" class="space-y-4">
+                <input type="hidden" id="song-id">
+                <div>
+                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Title</label>
+                    <input type="text" id="input-title" placeholder="Song Title" required class="w-full bg-white/5 rounded-lg px-4 py-3 outline-none border border-white/5 focus:border-emerald-500/50 text-white font-bold text-sm">
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Lyrics & Chords</label>
+                    <textarea id="input-lyrics" placeholder="Paste chords and lyrics here..." class="w-full bg-white/5 rounded-lg px-4 py-3 h-48 font-mono text-xs outline-none border border-white/5 focus:border-emerald-500/50 text-white"></textarea>
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Order Index</label>
+                    <input type="number" id="input-order" placeholder="01" class="w-full bg-white/5 rounded-lg px-4 py-3 outline-none border border-white/5 focus:border-emerald-500/50 text-white font-bold text-sm">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-3 font-bold text-slate-500 text-sm">Cancel</button>
+                    <button type="submit" id="save-btn" class="flex-[2] py-3 bg-emerald-600 text-white rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-all">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         const SUPABASE_URL = 'https://llzpyhmhdbckkiovjiig.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsenB5aG1oZGJja2tpb3ZqaWlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4Mjc0ODgsImV4cCI6MjA4NjQwMzQ4OH0.NoXKtNS3QtFyv-JLF_bRx_xusBRGWX_EukBgT3Cz4To';
@@ -78,7 +147,7 @@
         let songs = [];
         let activeSongId = null;
         let playedIds = JSON.parse(localStorage.getItem('played_songs') || '[]');
-        let isSaving = false; 
+        let isSavingOrder = false; 
 
         const songListContainer = document.getElementById('song-list');
         const loader = document.getElementById('global-loader');
@@ -92,7 +161,7 @@
                 animation: 250,
                 handle: '.drag-handle',
                 ghostClass: 'sortable-ghost',
-                onStart: () => { isSaving = true; },
+                onStart: () => { isSavingOrder = true; },
                 onEnd: async () => {
                     const rows = Array.from(el.children);
                     const updates = rows.map((child, index) => ({
@@ -100,55 +169,63 @@
                         order: index + 1
                     }));
 
-                    if (loader) loader.classList.remove('opacity-0');
+                    toggleLoader(true);
                     try {
                         const { error } = await supabaseClient
                             .from('songs')
-                            .upsert(updates, { onConflict: 'id' });
+                            .upsert(updates);
                         if (error) throw error;
-                        showToast("Порядок обновлен");
+                        showToast("Order Saved");
                     } catch (err) {
-                        showToast("Ошибка сохранения");
-                        await refreshData();
+                        showToast("Sync Error");
+                        refreshData();
                     } finally {
-                        if (loader) loader.classList.add('opacity-0');
-                        isSaving = false; 
+                        toggleLoader(false);
+                        isSavingOrder = false; 
                     }
                 }
             });
         }
 
         async function refreshData() {
-            if (isSaving) return;
-            if (loader) loader.classList.remove('opacity-0');
+            if (isSavingOrder) return;
+            toggleLoader(true);
             try {
-                const { data: songsData } = await supabaseClient
+                const { data: songsData, error: songsError } = await supabaseClient
                     .from('songs').select('*').order('order', { ascending: true });
+                
                 const { data: statusData } = await supabaseClient
                     .from('status').select('active_song_id').eq('id', 1).maybeSingle();
+
+                if (songsError) throw songsError;
 
                 songs = songsData || [];
                 activeSongId = statusData?.active_song_id || null;
                 renderSongs();
                 initSortable();
+            } catch (err) {
+                showToast("Conn Error");
             } finally {
-                if (loader) loader.classList.add('opacity-0');
+                toggleLoader(false);
             }
         }
 
         supabaseClient
             .channel('db-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, () => {
-                if (!isSaving) refreshData();
+                if (!isSavingOrder) refreshData();
             })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'status' }, () => {
-                refreshData();
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'status' }, (payload) => {
+                activeSongId = payload.new.active_song_id;
+                renderSongs();
             })
             .subscribe();
 
         window.announceSong = async (id) => {
-            const song = songs.find(s => s.id === id);
+            const song = songs.find(s => s.id == id);
             if (!song) return;
+            
+            toggleLoader(true);
             try {
                 activeSongId = id;
                 if (!playedIds.includes(id)) {
@@ -157,35 +234,51 @@
                 }
                 renderSongs();
                 
-                await supabaseClient.from('status').upsert({ id: 1, active_song_id: id }, { onConflict: 'id' });
+                const { error } = await supabaseClient
+                    .from('status')
+                    .upsert({ id: 1, active_song_id: id });
+                
+                if (error) throw error;
 
                 const message = `📡 <b>СЛЕДУЮЩАЯ ПЕСНЯ:</b>\n🎵 <b>${song.title.toUpperCase()}</b>`;
-                fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+                await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: TG_CHAT_ID, text: message, parse_mode: 'HTML' })
                 });
-                showToast(`Играет: ${song.title}`);
+                
+                showToast(`Live: ${song.title}`);
             } catch (err) { 
-                console.error(err);
-                showToast("Ошибка связи");
+                showToast("Fail");
+            } finally {
+                toggleLoader(false);
             }
         };
 
         window.resetPlayed = () => {
-            if (confirm('Сбросить счетчик сыгранных?')) {
+            if (confirm('Reset played status?')) {
                 playedIds = [];
                 localStorage.setItem('played_songs', '[]');
                 renderSongs();
-                showToast("Сброшено");
+                showToast("Reset Done");
             }
         };
 
-        window.toggleLyrics = (id) => document.getElementById(`lyrics-${id}`)?.classList.toggle('show');
+        window.toggleLyrics = (id) => {
+            const panel = document.getElementById(`lyrics-${id}`);
+            const isShowing = panel.classList.contains('show');
+            document.querySelectorAll('.lyrics-panel').forEach(p => p.classList.remove('show'));
+            if (!isShowing) {
+                panel.classList.add('show');
+                setTimeout(() => {
+                    panel.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        };
 
         window.openEditModal = (id = null) => {
-            const song = id ? songs.find(s => s.id === id) : { title: '', lyrics: '', order: (songs.length + 1) };
-            document.getElementById('modal-title').innerText = id ? 'Редактировать' : 'Новая песня';
+            const song = id ? songs.find(s => s.id == id) : { title: '', lyrics: '', order: (songs.length + 1) };
+            document.getElementById('modal-title').innerText = id ? 'Edit Song' : 'New Song';
             document.getElementById('song-id').value = id || '';
             document.getElementById('input-title').value = song.title;
             document.getElementById('input-lyrics').value = song.lyrics || '';
@@ -193,19 +286,29 @@
             document.getElementById('delete-btn').classList.toggle('hidden', !id);
             songModal.classList.remove('hidden');
             songModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
         };
 
         window.closeModal = () => {
             songModal.classList.add('hidden');
             songModal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
         };
 
         window.deleteCurrentSong = async () => {
             const id = document.getElementById('song-id').value;
-            if (id && confirm('Удалить песню навсегда?')) {
-                await supabaseClient.from('songs').delete().eq('id', id);
-                closeModal();
-                refreshData();
+            if (id && confirm('Delete song?')) {
+                toggleLoader(true);
+                try {
+                    await supabaseClient.from('songs').delete().eq('id', id);
+                    closeModal();
+                    await refreshData();
+                    showToast("Deleted");
+                } catch (e) {
+                    showToast("Error");
+                } finally {
+                    toggleLoader(false);
+                }
             }
         };
 
@@ -213,107 +316,78 @@
             e.preventDefault();
             const id = document.getElementById('song-id').value;
             const data = {
-                title: document.getElementById('input-title').value,
+                title: document.getElementById('input-title').value.trim(),
                 lyrics: document.getElementById('input-lyrics').value,
                 order: Number(document.getElementById('input-order').value)
             };
-            const request = id ? supabaseClient.from('songs').update(data).eq('id', id) : supabaseClient.from('songs').insert([data]);
-            await request;
-            closeModal();
-            refreshData();
+            toggleLoader(true);
+            try {
+                if (id) await supabaseClient.from('songs').update(data).eq('id', id);
+                else await supabaseClient.from('songs').insert([data]);
+                closeModal();
+                await refreshData();
+                showToast("Saved");
+            } catch (err) {
+                showToast("Error");
+            } finally {
+                toggleLoader(false);
+            }
         };
+
+        function toggleLoader(show) {
+            if (loader) loader.classList.toggle('opacity-0', !show);
+        }
 
         function showToast(text) {
             const toast = document.getElementById('status-toast');
             document.getElementById('toast-text').innerText = text;
             toast.classList.remove('translate-y-24', 'opacity-0');
-            setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 2500);
+            setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 2000);
         }
 
         function renderSongs() {
             if (!songs.length) {
-                songListContainer.innerHTML = '<div class="p-12 text-center opacity-40 uppercase font-black text-xs tracking-widest">Плейлист пуст</div>';
+                songListContainer.innerHTML = `<div class="p-8 text-center opacity-40 text-[10px] uppercase font-black tracking-widest">Empty List</div>`;
                 return;
             }
+
             songListContainer.innerHTML = songs.map(s => {
-                const isActive = activeSongId === s.id;
+                const isActive = activeSongId == s.id;
                 const isPlayed = playedIds.includes(s.id);
                 return `
-                <div class="song-row ${isActive ? 'active' : ''} ${isPlayed ? 'played' : ''} group" data-id="${s.id}">
+                <div class="song-row ${isActive ? 'active' : ''} ${isPlayed ? 'played' : ''}" data-id="${s.id}">
                     <div class="flex items-center px-3 py-1 gap-2">
-                        <div class="drag-handle w-6 text-[9px] font-black opacity-30 hover:opacity-100 transition-opacity cursor-grab">
-                            ${String(s.order || 0).padStart(2, '0')}
+                        <div class="drag-handle flex flex-col items-center justify-center w-6 py-1 opacity-20 hover:opacity-100 cursor-grab active:cursor-grabbing">
+                            <span class="text-[8px] font-black">${String(s.order || 0).padStart(2, '0')}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M4 8h16M4 16h16" /></svg>
                         </div>
-                        <div class="flex-1 cursor-pointer" onclick="toggleLyrics('${s.id}')">
-                            <h2 class="text-[13px] font-semibold tracking-tight ${isPlayed ? 'opacity-40 line-through' : ''} ${isActive ? 'text-emerald-400 font-bold' : ''}">${s.title}</h2>
+                        
+                        <div class="flex-1 min-w-0 cursor-pointer py-1.5" onclick="toggleLyrics('${s.id}')">
+                            <h2 class="text-[13px] font-bold truncate tracking-tight ${isPlayed && !isActive ? 'opacity-30' : 'text-white'} ${isActive ? 'text-emerald-400' : ''}">
+                                ${s.title}
+                            </h2>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <button onclick="openEditModal('${s.id}')" class="p-1.5 opacity-30 hover:opacity-100 transition-opacity"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
-                            <button onclick="announceSong('${s.id}')" class="p-2 rounded-lg ${isActive ? 'bg-emerald-600 shadow-lg shadow-emerald-500/20' : 'bg-white/5'} hover:scale-105 active:scale-95 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="${isActive ? 'white' : 'currentColor'}" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+
+                        <div class="flex items-center gap-1">
+                            <button onclick="openEditModal('${s.id}')" class="p-1.5 opacity-20 hover:opacity-100 hover:bg-white/5 rounded transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <button onclick="announceSong('${s.id}')" class="p-2 rounded-lg ${isActive ? 'bg-emerald-600 shadow-md' : 'bg-white/5 border border-white/5'} active:scale-90 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="${isActive ? 'white' : 'currentColor'}" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
                         </div>
                     </div>
-                    <div id="lyrics-${s.id}" class="lyrics-panel bg-black/20"><div class="p-5"><pre class="text-[12px] leading-relaxed text-slate-400 whitespace-pre-wrap font-mono">${s.lyrics || 'Текст отсутствует'}</pre></div></div>
+                    <div id="lyrics-${s.id}" class="lyrics-panel border-t border-white/5">
+                        <div class="p-4">
+                            <pre class="text-[12px] leading-relaxed text-slate-300 whitespace-pre-wrap font-mono select-text">${s.lyrics || 'Нет текста'}</pre>
+                        </div>
+                    </div>
                 </div>`;
             }).join('');
         }
-        window.onload = refreshData;
+
+        window.addEventListener('DOMContentLoaded', refreshData);
     </script>
-</head>
-
-<body class="antialiased">
-    <div id="global-loader" class="fixed top-0 left-0 w-full h-[2px] z-50 overflow-hidden bg-white/5 transition-opacity duration-300 opacity-0">
-        <div class="w-full h-full bg-emerald-500 origin-left animate-loader"></div>
-    </div>
-
-    <header class="glass sticky top-0 z-40 px-5 py-3 mb-2">
-        <div class="max-w-xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-emerald-600/20 p-2 rounded-lg text-emerald-500 border border-emerald-500/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                </div>
-                <h1 class="font-black text-xl tracking-tighter uppercase italic">BandFlow</h1>
-            </div>
-            <button onclick="resetPlayed()" class="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors">Reset</button>
-        </div>
-    </header>
-
-    <main class="max-w-xl mx-auto pb-32">
-        <div id="song-list" class="flex flex-col"></div>
-    </main>
-
-    <div class="fixed bottom-8 right-8 z-40">
-        <button onclick="openEditModal()" class="w-14 h-14 bg-emerald-600 text-white rounded-2xl shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-        </button>
-    </div>
-
-    <div id="status-toast" class="fixed bottom-24 left-0 right-0 z-50 px-6 transition-all duration-400 translate-y-24 opacity-0 pointer-events-none">
-        <div class="max-w-xs mx-auto glass border-emerald-500/50 p-4 rounded-2xl flex items-center gap-3 shadow-2xl">
-            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-            <span id="toast-text" class="font-bold text-[10px] uppercase tracking-widest text-emerald-50"></span>
-        </div>
-    </div>
-
-    <div id="song-modal" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-[100] hidden items-end sm:items-center justify-center p-4">
-        <div class="bg-[#12141c] w-full max-w-lg rounded-[32px] border border-white/10 shadow-2xl p-8 max-h-[90vh] overflow-y-auto outline-none">
-            <div class="flex justify-between items-center mb-8">
-                <h2 id="modal-title" class="text-xl font-black italic uppercase tracking-wider text-emerald-500">Edit</h2>
-                <button id="delete-btn" onclick="deleteCurrentSong()" class="p-2 text-red-500/40 hover:text-red-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-                </button>
-            </div>
-            <form id="song-form" class="space-y-6">
-                <input type="hidden" id="song-id">
-                <input type="text" id="input-title" placeholder="Название песни" required class="w-full bg-white/5 rounded-xl px-6 py-4 outline-none border border-white/5 focus:border-emerald-500/50 text-white font-bold">
-                <textarea id="input-lyrics" placeholder="Текст и аккорды..." class="w-full bg-white/5 rounded-xl px-6 py-4 h-64 font-mono text-sm outline-none border border-white/5 focus:border-emerald-500/50 text-white"></textarea>
-                <input type="number" id="input-order" placeholder="01" class="w-full bg-white/5 rounded-xl px-6 py-4 outline-none border border-white/5 focus:border-emerald-500/50 text-white font-bold">
-                <div class="flex gap-4">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-4 font-bold text-slate-500">Cancel</button>
-                    <button type="submit" class="flex-[2] py-4 bg-emerald-600 text-white rounded-xl font-black uppercase text-xs tracking-widest shadow-lg active:scale-95 transition-all">Save</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </body>
 
 </html>
