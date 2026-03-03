@@ -97,7 +97,6 @@
         </button>
     </div>
 
-    <!-- Toast Notification -->
     <div id="status-toast" class="fixed bottom-20 left-0 right-0 z-50 px-6 transition-all duration-400 translate-y-24 opacity-0 pointer-events-none">
         <div class="max-w-xs mx-auto glass border-emerald-500/50 p-3 rounded-xl flex items-center gap-2 shadow-2xl">
             <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -105,7 +104,6 @@
         </div>
     </div>
 
-    <!-- Song Edit Modal -->
     <div id="song-modal" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] hidden items-end sm:items-center justify-center p-4">
         <div class="bg-[#12141c] w-full max-w-lg rounded-[24px] border border-white/10 shadow-2xl p-6 max-h-[90vh] overflow-y-auto outline-none">
             <div class="flex justify-between items-center mb-6">
@@ -117,20 +115,20 @@
             <form id="song-form" class="space-y-4">
                 <input type="hidden" id="song-id">
                 <div>
-                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Title</label>
-                    <input type="text" id="input-title" placeholder="Song Title" required class="w-full bg-white/5 rounded-lg px-4 py-3 outline-none border border-white/5 focus:border-emerald-500/50 text-white font-bold text-sm">
+                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Название</label>
+                    <input type="text" id="input-title" placeholder="Название песни" required class="w-full bg-white/5 rounded-lg px-4 py-3 outline-none border border-white/5 focus:border-emerald-500/50 text-white font-bold text-sm">
                 </div>
                 <div>
-                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Lyrics & Chords</label>
-                    <textarea id="input-lyrics" placeholder="Paste chords and lyrics here..." class="w-full bg-white/5 rounded-lg px-4 py-3 h-48 font-mono text-xs outline-none border border-white/5 focus:border-emerald-500/50 text-white"></textarea>
+                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Текст и Аккорды</label>
+                    <textarea id="input-lyrics" placeholder="Вставьте текст..." class="w-full bg-white/5 rounded-lg px-4 py-3 h-48 font-mono text-xs outline-none border border-white/5 focus:border-emerald-500/50 text-white"></textarea>
                 </div>
                 <div>
-                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Order Index</label>
+                    <label class="text-[9px] uppercase font-black tracking-widest text-slate-500 ml-1 mb-1 block">Порядковый номер</label>
                     <input type="number" id="input-order" placeholder="01" class="w-full bg-white/5 rounded-lg px-4 py-3 outline-none border border-white/5 focus:border-emerald-500/50 text-white font-bold text-sm">
                 </div>
                 <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closeModal()" class="flex-1 py-3 font-bold text-slate-500 text-sm">Cancel</button>
-                    <button type="submit" id="save-btn" class="flex-[2] py-3 bg-emerald-600 text-white rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-all">Save Changes</button>
+                    <button type="button" onclick="closeModal()" class="flex-1 py-3 font-bold text-slate-500 text-sm">Отмена</button>
+                    <button type="submit" id="save-btn" class="flex-[2] py-3 bg-emerald-600 text-white rounded-lg font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-all">Сохранить</button>
                 </div>
             </form>
         </div>
@@ -164,6 +162,7 @@
                 onStart: () => { isSavingOrder = true; },
                 onEnd: async () => {
                     const rows = Array.from(el.children);
+                    // Формируем массив объектов для обновления только полей id и order
                     const updates = rows.map((child, index) => ({
                         id: child.dataset.id,
                         order: index + 1
@@ -171,13 +170,17 @@
 
                     toggleLoader(true);
                     try {
+                        // Чистый upsert без лишних параметров columns в URL
                         const { error } = await supabaseClient
                             .from('songs')
                             .upsert(updates);
+                        
                         if (error) throw error;
-                        showToast("Order Saved");
+                        showToast("Порядок сохранен");
                     } catch (err) {
-                        showToast("Sync Error");
+                        console.error("Sort Error Details:", err);
+                        showToast("Ошибка синхронизации");
+                        // В случае ошибки возвращаем как было в БД
                         refreshData();
                     } finally {
                         toggleLoader(false);
@@ -204,7 +207,8 @@
                 renderSongs();
                 initSortable();
             } catch (err) {
-                showToast("Conn Error");
+                console.error("Load Error:", err);
+                showToast("Ошибка загрузки");
             } finally {
                 toggleLoader(false);
             }
@@ -247,20 +251,20 @@
                     body: JSON.stringify({ chat_id: TG_CHAT_ID, text: message, parse_mode: 'HTML' })
                 });
                 
-                showToast(`Live: ${song.title}`);
+                showToast(`В эфире: ${song.title}`);
             } catch (err) { 
-                showToast("Fail");
+                showToast("Ошибка вещания");
             } finally {
                 toggleLoader(false);
             }
         };
 
         window.resetPlayed = () => {
-            if (confirm('Reset played status?')) {
+            if (confirm('Сбросить статус исполненных песен?')) {
                 playedIds = [];
                 localStorage.setItem('played_songs', '[]');
                 renderSongs();
-                showToast("Reset Done");
+                showToast("Статусы сброшены");
             }
         };
 
@@ -278,7 +282,7 @@
 
         window.openEditModal = (id = null) => {
             const song = id ? songs.find(s => s.id == id) : { title: '', lyrics: '', order: (songs.length + 1) };
-            document.getElementById('modal-title').innerText = id ? 'Edit Song' : 'New Song';
+            document.getElementById('modal-title').innerText = id ? 'Редактировать' : 'Новая песня';
             document.getElementById('song-id').value = id || '';
             document.getElementById('input-title').value = song.title;
             document.getElementById('input-lyrics').value = song.lyrics || '';
@@ -297,15 +301,15 @@
 
         window.deleteCurrentSong = async () => {
             const id = document.getElementById('song-id').value;
-            if (id && confirm('Delete song?')) {
+            if (id && confirm('Удалить песню навсегда?')) {
                 toggleLoader(true);
                 try {
                     await supabaseClient.from('songs').delete().eq('id', id);
                     closeModal();
                     await refreshData();
-                    showToast("Deleted");
+                    showToast("Удалено");
                 } catch (e) {
-                    showToast("Error");
+                    showToast("Ошибка удаления");
                 } finally {
                     toggleLoader(false);
                 }
@@ -326,9 +330,9 @@
                 else await supabaseClient.from('songs').insert([data]);
                 closeModal();
                 await refreshData();
-                showToast("Saved");
+                showToast("Сохранено");
             } catch (err) {
-                showToast("Error");
+                showToast("Ошибка сохранения");
             } finally {
                 toggleLoader(false);
             }
@@ -347,7 +351,7 @@
 
         function renderSongs() {
             if (!songs.length) {
-                songListContainer.innerHTML = `<div class="p-8 text-center opacity-40 text-[10px] uppercase font-black tracking-widest">Empty List</div>`;
+                songListContainer.innerHTML = `<div class="p-8 text-center opacity-40 text-[10px] uppercase font-black tracking-widest">Список пуст</div>`;
                 return;
             }
 
