@@ -140,7 +140,7 @@
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const TG_BOT_TOKEN = "8589462243:AAFKM4TYkNQzGddVbdE7esNUkvwWfsO-SGQ";
-        const TG_CHAT_ID = "-4995669410";
+        const TG_CHAT_ID = "-5071925461";
 
         let songs = [];
         let activeSongId = null;
@@ -253,7 +253,7 @@
                 
                 if (error) throw error;
 
-                const message = `📡 <b>СЛЕДУЮЩАЯ ПЕСНЯ:</b>\n🎵 <b>${song.title.toUpperCase()}</b>`;
+                const message = `⚡️⚡️ <b>СЛЕДУЮЩАЯ ПЕСНЯ:</b>\n🎵 <b>${song.title.toUpperCase()}</b>`;
                 await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -376,7 +376,7 @@
                         </div>
                         
                         <div class="flex-1 min-w-0 cursor-pointer py-1.5" onclick="toggleLyrics('${s.id}')">
-                            <h2 class="text-[13px] font-bold truncate tracking-tight ${isPlayed && !isActive ? 'opacity-30' : 'text-white'} ${isActive ? 'text-emerald-400' : ''}">
+                            <h2 class="text-[13px] font truncate tracking-tight ${isPlayed && !isActive ? 'opacity-30' : 'text-white'} ${isActive ? 'text-emerald-400' : ''}">
                                 ${s.title}
                             </h2>
                         </div>
